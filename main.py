@@ -13,14 +13,15 @@ def init_parser():
     p.add_argument("--password", nargs=1, help="Helen password", required=True)
     p.add_argument("--country", nargs=1, help="Entsoe country code", default="FI")
     p.add_argument("--tz", nargs=1, help="Entsoe timezone", default="Europe/Helsinki")
+    p.add_argument("--start", nargs=1, help="Optional start date YYYY-MM-DD", default=None)
     args = p.parse_args()
     return args
 
 def main():
     args = init_parser()
     db = ElectricityDatabase(args.db)
-    Entsoee(database=db, api_key=args.apikey[0], country=args.country, tz=args.tz)
-    Helen(db, args.username[0], args.password[0])
+    Entsoee(database=db, api_key=args.apikey[0], country=args.country, tz=args.tz, start_date=args.start[0])
+    Helen(database=db, username=args.username[0], password=args.password[0], start_date=args.start[0])
     db.close()
 
 if __name__ == "__main__":

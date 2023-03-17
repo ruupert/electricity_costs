@@ -7,7 +7,15 @@ from entsoe import EntsoePandasClient
 
 class Entsoee:
 
-    def __init__(self, database, api_key, country, tz):
+    def __init__(self, database, api_key, country, tz, start_date):
+
+        if start_date is None:
+            self.start_date = datetime.now() + timedelta(days=-7)
+        else: 
+            self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
+
+        self.end_date = datetime.now() + timedelta(days=2)
+
         self.api_key = api_key
         self.country = country
         self.tz = tz
@@ -20,10 +28,8 @@ class Entsoee:
 
     def __fetch_prices(self):
         client = EntsoePandasClient(api_key=self.api_key)
-        start_date = datetime.now() + timedelta(days=-5)
-        end_date = datetime.now() + timedelta(days=2)
-        start = pd.Timestamp(start_date, tz=self.tz)
-        end = pd.Timestamp(end_date, tz=self.tz)
+        start = pd.Timestamp(self.start_date, tz=self.tz)
+        end = pd.Timestamp(self.end_date, tz=self.tz)
         try:
             ts = client.query_day_ahead_prices(self.country,
                                                start=start,

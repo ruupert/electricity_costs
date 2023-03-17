@@ -26,9 +26,13 @@ class Helen:
             options=options, service_args=["--marionette-port", "2828"]
         )
 
-    def __init__(self, database, username, password):
+    def __init__(self, database, username, password, start_date):
 
-        self.start_date = datetime.now() + timedelta(days=-7)
+        if start_date is None:
+            self.start_date = datetime.now() + timedelta(days=-7)            
+        else:
+            self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
+
         self.end_date = datetime.now() + timedelta(days=-1)
         self.driver = self.__init_geckodriver()
 
@@ -88,7 +92,7 @@ class Helen:
         self.fpath = f"./dl/electricity_report_{ self.start_date.strftime('%d_%m_%Y') }_{ self.end_date.strftime('%d_%m_%Y') }.xlsx"
 
         # wait for the file to be downloaded
-        for i in range(1, 5):
+        for i in range(1, 15):
             time.sleep(5)
             if os.path.exists(self.fpath):
                 break

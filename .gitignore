@@ -4,3 +4,4 @@ dl/*
 geckodriver.log
 __pycache__/*
 old/*
+settings.json

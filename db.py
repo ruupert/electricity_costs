@@ -5,7 +5,7 @@ class ElectricityDatabase:
     def __init__(self, dbfile):
         self.conn = sqlite3.connect(dbfile)
         self.cursor = self.conn.cursor()
-        self.__exec_sql("""CREATE TABLE IF NOT EXISTS electricity (date TEXT NOT NULL, price REAL, kwh REAL);""")
+        self.__exec_sql("""CREATE TABLE IF NOT EXISTS electricity (date TEXT NOT NULL, price REAL DEFAULT 0.0, kwh REAL DEFAULT 0.0);""")
         self.__exec_sql("""CREATE UNIQUE INDEX IF NOT EXISTS idx_electricity_date ON electricity (date);""")
 
     def __exec_sql(self, query, data_tuple=None):

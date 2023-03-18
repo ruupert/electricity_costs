@@ -13,7 +13,8 @@ class Entsoee(object):
     def __init__(self, database, api_key, country, tz, start_date):
 
         if start_date is None:
-            self.start_date = datetime.now() + timedelta(days=-7)
+            t = datetime.now()
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0) + timedelta(days=-7)
         else: 
             self.start_date = datetime.strptime(start_date[0], "%Y-%m-%d")
 

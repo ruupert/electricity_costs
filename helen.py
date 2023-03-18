@@ -1,10 +1,11 @@
 import datetime
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import openpyxl
+import pandas
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -17,9 +18,10 @@ from decorator import LogDecorator
 
 class Helen(object):
     @LogDecorator()
-    def __init_geckodriver(self):
+    def __init_geckodriver(self, verbose):
         options = Options()
-        options.add_argument("-headless")
+        if verbose == 0:
+            options.add_argument("-headless")
         options.add_argument("-profile")
         options.add_argument(".selenium")
         # options.set_preference("browser.download.folderList", 2)
@@ -30,18 +32,49 @@ class Helen(object):
         )
 
     @LogDecorator()
-    def __init__(self, database, username, password, start_date):
+    def __init__(self, database, username, password, delivery_site_id, start_date, verbose):
+
+        self.database = database
+        self.username = username
+        self.password = password
+        self.verbose = verbose
+        self.delivery_site_id = delivery_site_id
 
         if start_date is None:
-            self.start_date = datetime.now() + timedelta(days=-7)            
+            t = datetime.now()
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0) + timedelta(days=-7)
         else:
             self.start_date = datetime.strptime(start_date[0], "%Y-%m-%d")
-
         self.end_date = datetime.now() + timedelta(days=-1)
-        self.driver = self.__init_geckodriver()
+
+        if delivery_site_id != None:
+            self.__fetch_with_helen_electricity_usage()
+        else:
+            self.__fetch_with_selenium()
+
+    @LogDecorator()
+    def __fetch_with_helen_electricity_usage(self):
+        import helen_electricity_usage  # refactored version, setup.py install --user this branch https://github.com/Janska85/python-helen-electricity-usage/tree/develop/refactor-to-new-portal
+
+        helen = helen_electricity_usage.Helen(self.username, self.password, self.delivery_site_id)
+        helen.login()
+        data = helen.get_electricity(self.start_date.replace(tzinfo=timezone.utc), self.end_date.replace(tzinfo=timezone.utc))
+        
+        data = data['intervals']['electricity'][0]
+        idx = pandas.date_range(start=datetime.strptime( data['start'], "%Y-%m-%dT%H:%M:%S+00:00"), end=datetime.strptime( data['stop'], "%Y-%m-%dT%H:%M:%S+00:00"), freq='H')
+        pa = pandas.array(data['measurements'])
+
+        df = pandas.DataFrame(data=pa, index=idx)
+        for row in df.itertuples():
+            data_tuple = (row[0], row[1]['value'])
+            self.database.insert_or_update("kwh", data_tuple)
+
+    @LogDecorator()
+    def __fetch_with_selenium(self):
+        self.driver = self.__init_geckodriver(self.verbose)
 
         try:
-            self.__login(username, password)
+            self.__login(self.username, self.password)
             self.__get_consumption()
             if self.fpath != None:
                 wb_obj = openpyxl.load_workbook(Path(self.fpath))
@@ -55,7 +88,7 @@ class Helen(object):
                             datetime.strftime(row[0].value, "%Y-%m-%d %H:00:00"),
                             kw,
                         )
-                        database.insert_or_update("kwh", data_tuple)
+                        self.database.insert_or_update("kwh", data_tuple)
                 wb_obj.close()
                 os.remove(self.fpath)
         except:

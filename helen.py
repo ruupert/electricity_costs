@@ -31,7 +31,7 @@ class Helen:
         if start_date is None:
             self.start_date = datetime.now() + timedelta(days=-7)            
         else:
-            self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            self.start_date = datetime.strptime(start_date[0], "%Y-%m-%d")
 
         self.end_date = datetime.now() + timedelta(days=-1)
         self.driver = self.__init_geckodriver()

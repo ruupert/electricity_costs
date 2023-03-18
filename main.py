@@ -20,8 +20,8 @@ def init_parser():
 def main():
     args = init_parser()
     db = ElectricityDatabase(args.db)
-    Entsoee(database=db, api_key=args.apikey[0], country=args.country, tz=args.tz, start_date=args.start[0])
-    Helen(database=db, username=args.username[0], password=args.password[0], start_date=args.start[0])
+    Entsoee(database=db, api_key=args.apikey[0], country=args.country, tz=args.tz, start_date=args.start)
+    Helen(database=db, username=args.username[0], password=args.password[0], start_date=args.start)
     db.close()
 
 if __name__ == "__main__":

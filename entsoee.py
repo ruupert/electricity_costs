@@ -39,5 +39,5 @@ class Entsoee(object):
                                                start=start,
                                                end=end)
             return ts
-        except requests.HTTPError:
-            return None
+        except requests.HTTPError as ex:
+            raise ex

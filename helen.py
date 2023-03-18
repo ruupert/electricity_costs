@@ -106,4 +106,8 @@ class Helen(object):
         for i in range(1, 15):
             time.sleep(5)
             if os.path.exists(self.fpath):
+                file_exists = True
                 break
+
+        if not file_exists:
+            raise ValueError('Download probably failed.')

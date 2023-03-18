@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import requests
@@ -14,11 +14,12 @@ class Entsoee(object):
 
         if start_date is None:
             t = datetime.now()
-            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0) + timedelta(days=-7)
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc) + timedelta(days=-7)
         else: 
-            self.start_date = datetime.strptime(start_date[0], "%Y-%m-%d")
-
-        self.end_date = datetime.now() + timedelta(days=2)
+            t = datetime.strptime(start_date[0], "%Y-%m-%d")
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc)
+        t = datetime.now()
+        self.end_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc) + timedelta(days=2)
 
         self.api_key = api_key
         self.country = country
@@ -26,15 +27,15 @@ class Entsoee(object):
         spot_data = self.__fetch_prices()
         if spot_data is not None:
             for key in spot_data.keys():
-                data_tuple = (key.strftime("%Y-%m-%d %H:%M:%S"),
+                data_tuple = (key.tz_convert('Europe/Helsinki'),
                               spot_data[key] / 10)
                 database.insert_or_update("price", data_tuple)
 
     @LogDecorator()
     def __fetch_prices(self):
         client = EntsoePandasClient(api_key=self.api_key)
-        start = pd.Timestamp(self.start_date, tz=self.tz)
-        end = pd.Timestamp(self.end_date, tz=self.tz)
+        start = pd.Timestamp(self.start_date).tz_convert('Europe/Helsinki')
+        end = pd.Timestamp(self.end_date).tz_convert('Europe/Helsinki')
         try:
             ts = client.query_day_ahead_prices(self.country,
                                                start=start,

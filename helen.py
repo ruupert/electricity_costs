@@ -1,10 +1,10 @@
 import datetime
+import math
 import os
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import openpyxl
 import pandas
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -42,10 +42,12 @@ class Helen(object):
 
         if start_date is None:
             t = datetime.now()
-            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0) + timedelta(days=-7)
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc) + timedelta(days=-7)
         else:
-            self.start_date = datetime.strptime(start_date[0], "%Y-%m-%d")
-        self.end_date = datetime.now() + timedelta(days=-1)
+            t = datetime.strptime(start_date[0], "%Y-%m-%d")
+            self.start_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc)
+        t = datetime.now()
+        self.end_date = datetime(year=t.year,month=t.month,day=t.day, hour=0, minute=0, second=0, tzinfo=timezone.utc)
 
         if delivery_site_id != None:
             self.__fetch_with_helen_electricity_usage()
@@ -58,15 +60,16 @@ class Helen(object):
 
         helen = helen_electricity_usage.Helen(self.username, self.password, self.delivery_site_id)
         helen.login()
-        data = helen.get_electricity(self.start_date.replace(tzinfo=timezone.utc), self.end_date.replace(tzinfo=timezone.utc))
+        data = helen.get_electricity(self.start_date, self.end_date)
+        
         
         data = data['intervals']['electricity'][0]
-        idx = pandas.date_range(start=datetime.strptime( data['start'], "%Y-%m-%dT%H:%M:%S+00:00"), end=datetime.strptime( data['stop'], "%Y-%m-%dT%H:%M:%S+00:00"), freq='H')
+        idx = pandas.date_range(start=datetime.strptime( data['start'], "%Y-%m-%dT%H:%M:%S+00:00"), end=(datetime.strptime( data['stop'], "%Y-%m-%dT%H:%M:%S+00:00") + timedelta(hours=-1)), freq='H')
         pa = pandas.array(data['measurements'])
 
         df = pandas.DataFrame(data=pa, index=idx)
         for row in df.itertuples():
-            data_tuple = (row[0], row[1]['value'])
+            data_tuple = (row[0].tz_localize('utc').tz_convert('Europe/Helsinki'), row[1]['value'])
             self.database.insert_or_update("kwh", data_tuple)
 
     @LogDecorator()
@@ -77,22 +80,17 @@ class Helen(object):
             self.__login(self.username, self.password)
             self.__get_consumption()
             if self.fpath != None:
-                wb_obj = openpyxl.load_workbook(Path(self.fpath))
-                sheet = wb_obj.active
-                for row in sheet.iter_rows():
-                    if row[0].value != "Ajankohta":
-                        kw = row[1].value
-                        if kw == None:
-                            kw = 0.0
-                        data_tuple = (
-                            datetime.strftime(row[0].value, "%Y-%m-%d %H:00:00"),
-                            kw,
-                        )
-                        self.database.insert_or_update("kwh", data_tuple)
-                wb_obj.close()
+                pd_excel_df = pandas.read_excel(Path(self.fpath))
+                for row in pd_excel_df.itertuples():
+                    kw = row[2]
+                    if math.isnan(kw):
+                        kw = 0.0
+                    data_tuple = (row[1].tz_localize('Europe/Helsinki'), kw)
+                    self.database.insert_or_update("kwh", data_tuple)
                 os.remove(self.fpath)
-        except:
-            pass
+        except Exception as ex:
+            self.driver.close()
+            raise ex
         self.driver.close()
 
     @LogDecorator()

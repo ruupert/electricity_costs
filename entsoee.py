@@ -4,9 +4,12 @@ import pandas as pd
 import requests
 from entsoe import EntsoePandasClient
 
+from decorator import LogDecorator
 
-class Entsoee:
 
+class Entsoee(object):
+
+    @LogDecorator()
     def __init__(self, database, api_key, country, tz, start_date):
 
         if start_date is None:
@@ -26,6 +29,7 @@ class Entsoee:
                               spot_data[key] / 10)
                 database.insert_or_update("price", data_tuple)
 
+    @LogDecorator()
     def __fetch_prices(self):
         client = EntsoePandasClient(api_key=self.api_key)
         start = pd.Timestamp(self.start_date, tz=self.tz)

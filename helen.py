@@ -12,8 +12,11 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from decorator import LogDecorator
 
-class Helen:
+
+class Helen(object):
+    @LogDecorator()
     def __init_geckodriver(self):
         options = Options()
         options.add_argument("-headless")
@@ -26,6 +29,7 @@ class Helen:
             options=options, service_args=["--marionette-port", "2828"]
         )
 
+    @LogDecorator()
     def __init__(self, database, username, password, start_date):
 
         if start_date is None:
@@ -55,9 +59,10 @@ class Helen:
                 wb_obj.close()
                 os.remove(self.fpath)
         except:
-            None
+            pass
         self.driver.close()
 
+    @LogDecorator()
     def __login(self, username, password):
         self.driver.get("https://www.helen.fi/kirjautuminen")
         self.driver.switch_to.frame(0)
@@ -66,8 +71,14 @@ class Helen:
         self.driver.find_element(By.XPATH,"/html/body/table/tbody/tr/td/div/div[2]/div[2]/div/div[3]/div/form/div/span/input").click()
         time.sleep(10)  # for now wait here statically the redirections to finish
         self.driver.switch_to.default_content()
-        # WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.CLASS_NAME, "recharts-wrapper")))
+        try: 
+            WebDriverWait(self.driver, 3).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "recharts-wrapper"))
+            )
+        except Exception as ex:
+            raise ex
 
+    @LogDecorator()
     def __get_consumption(self):
         self.driver.get(
             "https://web.omahelen.fi/personal/reports/electricity-consumption"

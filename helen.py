@@ -32,13 +32,14 @@ class Helen(object):
         )
 
     @LogDecorator()
-    def __init__(self, database, username, password, delivery_site_id, start_date, verbose):
+    def __init__(self, database, username, password, delivery_site_id, tz, start_date, verbose):
 
         self.database = database
         self.username = username
         self.password = password
         self.verbose = verbose
         self.delivery_site_id = delivery_site_id
+        self.tz = tz
 
         if start_date is None:
             t = datetime.now()
@@ -69,7 +70,7 @@ class Helen(object):
 
         df = pandas.DataFrame(data=pa, index=idx)
         for row in df.itertuples():
-            data_tuple = (row[0].tz_localize('utc').tz_convert('Europe/Helsinki'), row[1]['value'])
+            data_tuple = (row[0].tz_localize('utc').tz_convert(self.tz), row[1]['value'])
             self.database.insert_or_update("kwh", data_tuple)
 
     @LogDecorator()
@@ -85,7 +86,7 @@ class Helen(object):
                     kw = row[2]
                     if math.isnan(kw):
                         kw = 0.0
-                    data_tuple = (row[1].tz_localize('Europe/Helsinki'), kw)
+                    data_tuple = (row[1].tz_localize(self.tz), kw)
                     self.database.insert_or_update("kwh", data_tuple)
                 os.remove(self.fpath)
         except Exception as ex:

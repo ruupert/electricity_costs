@@ -27,15 +27,15 @@ class Entsoee(object):
         spot_data = self.__fetch_prices()
         if spot_data is not None:
             for key in spot_data.keys():
-                data_tuple = (key.tz_convert('Europe/Helsinki'),
+                data_tuple = (key.tz_convert(self.tz),
                               spot_data[key] / 10)
                 database.insert_or_update("price", data_tuple)
 
     @LogDecorator()
     def __fetch_prices(self):
         client = EntsoePandasClient(api_key=self.api_key)
-        start = pd.Timestamp(self.start_date).tz_convert('Europe/Helsinki')
-        end = pd.Timestamp(self.end_date).tz_convert('Europe/Helsinki')
+        start = pd.Timestamp(self.start_date).tz_convert(self.tz)
+        end = pd.Timestamp(self.end_date).tz_convert(self.tz)
         try:
             ts = client.query_day_ahead_prices(self.country,
                                                start=start,

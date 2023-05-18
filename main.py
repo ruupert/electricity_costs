@@ -1,5 +1,6 @@
 import argparse
 import logging
+import yaml
 
 from db import ElectricityDatabase
 from decorator import LogDecorator
@@ -25,21 +26,47 @@ def init_logger(log_level):
 def init_parser():
     p = argparse.ArgumentParser()
     p.add_argument("--db", nargs=1, help="sqlite3 filename", default="prices.sqlite3")
-    p.add_argument("--apikey", nargs=1, help="Entsoe rest api-key", required=True)
-    p.add_argument("--username", nargs=1, help="Helen username", required=True)
-    p.add_argument("--password", nargs=1, help="Helen password", required=True)
+    p.add_argument("--apikey", nargs=1, help="Entsoe rest api-key (required if no config file)")
+    p.add_argument("--username", nargs=1, help="Helen username (required if no config file)")
+    p.add_argument("--password", nargs=1, help="Helen password (required if no config file)")
     p.add_argument("--country", nargs=1, help="Entsoe country code", default="FI")
     p.add_argument("--tz", nargs=1, help="Entsoe timezone", default="Europe/Helsinki")
     p.add_argument("--start", nargs=1, help="Optional start date YYYY-MM-DD", default=None)
     p.add_argument("--delivery-site", help="alternate helen usage fetch", default=None)
+    p.add_argument("--config", help="Yaml config", default=None)
     p.add_argument('-v', action='count', default=0)
     return p.parse_args()
 
 @LogDecorator()
 def main(args):
+    if args.config:
+        with open(args.config, "r") as s:
+            try:
+                conf = yaml.safe_load(s)
+                print(conf['apikey'])
+                apikey = conf['apikey']
+                country = args.country
+                tz = args.tz
+                start_date = None
+                username = conf['username']
+                password = conf['password']
+                verbose = args.v
+                delivery_site = conf['delivery_site']
+            except yaml.YAMLError as ex:
+                print(ex)
+    else: 
+        apikey = args.apikey[0]
+        country = args.country
+        tz = args.tz
+        start_date = args.start
+        username = args.username[0]
+        password = args.password[0]
+        verbose = args.v
+        delivery_site = args.delivery_site
+
     db = ElectricityDatabase(args.db)
-    Entsoee(database=db, api_key=args.apikey[0], country=args.country, tz=args.tz, start_date=args.start)
-    Helen(database=db, username=args.username[0], password=args.password[0], start_date=args.start,verbose=args.v, tz=args.tz, delivery_site_id=args.delivery_site)
+    Entsoee(database=db, api_key=apikey, country=country, tz=tz, start_date=start_date)
+    Helen(database=db, username=username, password=password, start_date=start_date,verbose=verbose, tz=tz, delivery_site_id=delivery_site)
     db.close()
 
 if __name__ == "__main__":

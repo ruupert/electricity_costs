@@ -43,7 +43,6 @@ def main(args):
         with open(args.config, "r") as s:
             try:
                 conf = yaml.safe_load(s)
-                print(conf['apikey'])
                 apikey = conf['apikey']
                 country = args.country
                 tz = args.tz

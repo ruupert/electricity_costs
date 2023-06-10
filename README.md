@@ -5,7 +5,7 @@ Fetches nordpool day ahead prices from Entsoe rest api and own electricity consu
 get costs grouped by month:
 
 ```
-select STRFTIME("%Y-%m",date) as mdate,sum(kwh),sum((price*1.1*kwh)+(kwh*7.68))/100 from electricity group by mdate order by mdate;
+select STRFTIME("%Y-%m",date) as mdate,sum(kwh),sum((max(price,0)*1.1*kwh)+(kwh*7.68))/100 from electricity group by mdate order by mdate;
 ```
 ## Notes
 

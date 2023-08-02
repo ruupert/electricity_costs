@@ -3,4 +3,4 @@ pandas==1.5.3
 PyYAML==6.0
 requests>=2.31.0
 selenium==3.141.0
-psycopg2=2.9.6
+psycopg2==2.9.6

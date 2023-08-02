@@ -1,13 +1,12 @@
-import sqlite3
-
+import psycopg2
 from decorator import LogDecorator
 
 
-class ElectricityDatabaseSQ(object):
+class ElectricityDatabasePG(object):
 
     @LogDecorator()
-    def __init__(self, dbfile):
-        self.conn = sqlite3.connect(dbfile)
+    def __init__(self, psql_db, psql_user, psql_pass, psql_host):
+        self.conn = psycopg2.connect("dbname=electricity user=electricity password=costs host=zebra.irb.fi")
         self.cursor = self.conn.cursor()
         self.__exec_sql("""CREATE TABLE IF NOT EXISTS electricity (date TEXT NOT NULL, price REAL DEFAULT 0.0, kwh REAL DEFAULT 0.0);""")
         self.__exec_sql("""CREATE UNIQUE INDEX IF NOT EXISTS idx_electricity_date ON electricity (date);""")
@@ -22,7 +21,7 @@ class ElectricityDatabaseSQ(object):
 
     @LogDecorator()
     def insert_or_update(self, column, data_tuple):
-        self.__exec_sql(f"""INSERT OR IGNORE INTO electricity (date) VALUES ('{data_tuple[0]}')""")
+        self.__exec_sql(f"""INSERT INTO electricity (date) VALUES ('{data_tuple[0]}') ON CONFLICT (date) DO NOTHING""")
         self.__exec_sql(f"""UPDATE electricity SET {column} = '{data_tuple[1]}' WHERE date = '{data_tuple[0]}';""")
 
     @LogDecorator()

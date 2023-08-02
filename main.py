@@ -2,7 +2,8 @@ import argparse
 import logging
 import yaml
 
-from db import ElectricityDatabase
+from db import ElectricityDatabaseSQ
+from psqldb import ElectricityDatabasePG
 from decorator import LogDecorator
 from entsoee import Entsoee
 from helen import Helen
@@ -25,6 +26,10 @@ def init_logger(log_level):
 
 def init_parser():
     p = argparse.ArgumentParser()
+    p.add_argument("--psql-user", help="", default=None)
+    p.add_argument("--psql-pass", help="", default=None)
+    p.add_argument("--psql-host", help="", default=None)
+    p.add_argument("--psql-db", help="", default=None)    
     p.add_argument("--db", nargs=1, help="sqlite3 filename", default="prices.sqlite3")
     p.add_argument("--apikey", nargs=1, help="Entsoe rest api-key (required if no config file)")
     p.add_argument("--username", nargs=1, help="Helen username (required if no config file)")
@@ -38,11 +43,18 @@ def init_parser():
     return p.parse_args()
 
 @LogDecorator()
-def main(args):
+def main():
+    args = init_parser()
+    init_logger(get_log_level(args.v))
+
     if args.config:
         with open(args.config, "r") as s:
             try:
                 conf = yaml.safe_load(s)
+                psql_db=conf['psql_db']
+                psql_user=conf['psql_user']
+                psql_pass=conf['psql_pass']
+                psql_host=conf['psql_host']
                 apikey = conf['apikey']
                 country = args.country
                 tz = args.tz
@@ -54,6 +66,10 @@ def main(args):
             except yaml.YAMLError as ex:
                 print(ex)
     else: 
+        psql_db=args.psql_db
+        psql_user=args.psql_user
+        psql_pass=args.psql_pass
+        psql_host=args.psql_host
         apikey = args.apikey[0]
         country = args.country
         tz = args.tz
@@ -62,13 +78,13 @@ def main(args):
         password = args.password[0]
         verbose = args.v
         delivery_site = args.delivery_site
-
-    db = ElectricityDatabase(args.db)
+    if psql_db is not None:
+        db =  ElectricityDatabasePG(psql_db, psql_user, psql_pass, psql_host)
+    else:
+        db = ElectricityDatabaseSQ(args.db)
     Entsoee(database=db, api_key=apikey, country=country, tz=tz, start_date=start_date)
     Helen(database=db, username=username, password=password, start_date=start_date,verbose=verbose, tz=tz, delivery_site_id=delivery_site)
     db.close()
 
 if __name__ == "__main__":
-    args = init_parser()
-    init_logger(get_log_level(args.v))
-    main(args)
+    main()

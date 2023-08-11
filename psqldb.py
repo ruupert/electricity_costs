@@ -8,7 +8,7 @@ class ElectricityDatabasePG(object):
     def __init__(self, psql_db, psql_user, psql_pass, psql_host):
         self.conn = psycopg2.connect(f"dbname={psql_db} user={psql_user} password={psql_pass} host={psql_host}")
         self.cursor = self.conn.cursor()
-        self.__exec_sql("""CREATE TABLE IF NOT EXISTS electricity (date TEXT NOT NULL, price REAL DEFAULT 0.0, kwh REAL DEFAULT 0.0);""")
+        self.__exec_sql("""CREATE TABLE IF NOT EXISTS electricity (date timestamp NOT NULL, price REAL DEFAULT 0.0, kwh REAL DEFAULT 0.0);""")
         self.__exec_sql("""CREATE UNIQUE INDEX IF NOT EXISTS idx_electricity_date ON electricity (date);""")
 
     @LogDecorator()

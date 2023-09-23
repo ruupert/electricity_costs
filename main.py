@@ -73,6 +73,7 @@ def main():
                 password = conf['password']
                 verbose = args.v
                 delivery_site = conf['delivery_site']
+                pyroscope_server = conf['pyroscope_server']
             except yaml.YAMLError as ex:
                 print(ex)
     else: 
@@ -88,12 +89,13 @@ def main():
         password = args.password[0]
         verbose = args.v
         delivery_site = args.delivery_site
+        pyroscope_server = args.pyroscope_server
     if psql_db is not None:
         db =  ElectricityDatabasePG(psql_db, psql_user, psql_pass, psql_host)
     else:
         db = ElectricityDatabaseSQ(args.db)
     
-    if args['pyroscope_server'] is not None:
+    if pyroscope_server is not None:
         pyroscope_init(args['pyroscope_server'])
     Entsoee(database=db, api_key=apikey, country=country, tz=tz, start_date=start_date)
     Helen(database=db, username=username, password=password, start_date=start_date,verbose=verbose, tz=tz, delivery_site_id=delivery_site)

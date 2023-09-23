@@ -1,12 +1,21 @@
 import argparse
 import logging
 import yaml
+import pyroscope
 
 from db import ElectricityDatabaseSQ
 from psqldb import ElectricityDatabasePG
 from decorator import LogDecorator
 from entsoee import Entsoee
 from helen import Helen
+
+
+def pyroscope_init(pyroscope_server):
+    pyroscope.configure(
+        application_name       = "electricity_costs",
+        server_address = pyroscope_server,
+    )
+
 
 def get_log_level(v):
     if v == 0:
@@ -30,6 +39,7 @@ def init_parser():
     p.add_argument("--psql-pass", help="", default=None)
     p.add_argument("--psql-host", help="", default=None)
     p.add_argument("--psql-db", help="", default=None)    
+    p.add_argument("--pyroscope_server", help="Pyroscope server address", default=None)
     p.add_argument("--db", nargs=1, help="sqlite3 filename", default="prices.sqlite3")
     p.add_argument("--apikey", nargs=1, help="Entsoe rest api-key (required if no config file)")
     p.add_argument("--username", nargs=1, help="Helen username (required if no config file)")
@@ -82,6 +92,9 @@ def main():
         db =  ElectricityDatabasePG(psql_db, psql_user, psql_pass, psql_host)
     else:
         db = ElectricityDatabaseSQ(args.db)
+    
+    if args['pyroscope_server'] is not None:
+        pyroscope_init(args['pyroscope_server'])
     Entsoee(database=db, api_key=apikey, country=country, tz=tz, start_date=start_date)
     Helen(database=db, username=username, password=password, start_date=start_date,verbose=verbose, tz=tz, delivery_site_id=delivery_site)
     db.close()

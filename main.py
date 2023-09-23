@@ -96,7 +96,7 @@ def main():
         db = ElectricityDatabaseSQ(args.db)
     
     if pyroscope_server is not None:
-        pyroscope_init(args['pyroscope_server'])
+        pyroscope_init(pyroscope_server)
     Entsoee(database=db, api_key=apikey, country=country, tz=tz, start_date=start_date)
     Helen(database=db, username=username, password=password, start_date=start_date,verbose=verbose, tz=tz, delivery_site_id=delivery_site)
     db.close()
